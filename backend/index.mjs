@@ -122,7 +122,7 @@ export class DropRoom {
         if (this.env.TURN_KEY_ID && this.env.TURN_KEY_TOKEN) {
           try {
             const response = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${this.env.TURN_KEY_ID}/credentials/generate-ice-servers`, {
-              method: 'POST', headers: { Authorization: `Bearer ${this.env.TURN_KEY_TOKEN}`, 'Content-Type': 'application/json' },
+              method: 'POST', headers: { Authorization: `Bearer ${this.env.TURN_KEY_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'Vertflux-Drop/0.1.0' },
               body: JSON.stringify({ ttl: Math.max(60, Math.ceil((room.expiresAt - Date.now()) / 1000) + 60) }), signal: AbortSignal.timeout(10000),
             });
             if (!response.ok) return fail(503, '跨网中继暂时不可用，请稍后重试。');
@@ -225,7 +225,7 @@ export class DropRoom {
         for (const server of member.iceServers) {
           if (!server.username || member.revoked) continue;
           try {
-            const response = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${this.env.TURN_KEY_ID}/credentials/${encodeURIComponent(server.username)}/revoke`, { method: 'POST', headers: { Authorization: `Bearer ${this.env.TURN_KEY_TOKEN}` }, signal: AbortSignal.timeout(10000) });
+            const response = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${this.env.TURN_KEY_ID}/credentials/${encodeURIComponent(server.username)}/revoke`, { method: 'POST', headers: { Authorization: `Bearer ${this.env.TURN_KEY_TOKEN}`, 'User-Agent': 'Vertflux-Drop/0.1.0' }, signal: AbortSignal.timeout(10000) });
             if ([204, 404].includes(response.status)) member.revoked = true; else pending = true;
           } catch { pending = true; }
         }
