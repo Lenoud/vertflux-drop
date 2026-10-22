@@ -1,0 +1,61 @@
+name: 检查并部署 Vertflux 快传
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 检查通过后是否发布生产环境（仅 main 生效）
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: vertflux-drop-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  check:
+    name: 验证权限、信令与房间生命周期
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drop-web
+          path: dist
+          include-hidden-files: true
+          retention-days: 3
+  deploy:
+    name: 发布私有后端和网站
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.deploy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_ACCOUNT_ID: bf8566234d0f57c2451986e3cdcb01c4
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: drop-web
+          path: dist
+      - name: 更新私有 Worker 与 Durable Objects
+        run: npm run deploy:backend
+      - name: 发布 Pages
+        run: npm run deploy:web

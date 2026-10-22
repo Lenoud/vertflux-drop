@@ -1,0 +1,32 @@
+name: Vertflux 同步上游并创建 PR
+
+on:
+  schedule:
+    - cron: '7 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: vertflux-sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: 检查上游更新
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 同步上游并创建待审核 PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_REPOSITORY: schlagmichdoch/PairDrop
+          UPSTREAM_BRANCH: master
+          DEFAULT_BRANCH: main
+        run: bash .github/scripts/vertflux-sync-upstream.sh
