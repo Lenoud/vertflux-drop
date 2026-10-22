@@ -13,6 +13,9 @@ await writeFile('dist/index.html', html);
 const network = await readFile('public/scripts/network.js', 'utf8');
 const adapter = await readFile('cloudflare/server-connection.js', 'utf8');
 await writeFile('dist/scripts/network.js', adapter + '\n' + network.slice(network.indexOf('class Peer {')));
+// 上游当前已禁用 HEIC 转换，移除仍被预加载的 1.3 MB 库，不影响原文件传输。
+const main = await readFile('dist/scripts/main.js', 'utf8');
+await writeFile('dist/scripts/main.js', main.replace(/\s*"scripts\/libs\/heic2any\.min\.js",/, ''));
 for (const locale of ['zh-CN', 'en']) {
   const strings = JSON.parse(await readFile(`public/lang/${locale}.json`, 'utf8'));
   strings.instructions['no-peers-title'] = locale === 'zh-CN' ? '等待另一台设备加入' : 'Waiting for another device';

@@ -81,7 +81,13 @@ export function createGateway(fetchAuth = fetch) {
     if (path === '/' || path === '/dashboard') asset.pathname = '/vertflux';
     else if (/^\/(host|join)\/[a-f0-9-]{36}$/.test(path)) asset.pathname = '/';
     else if (!/^\/(scripts|styles|lang|images|fonts|sounds)\//.test(path) && !['/manifest.json', '/service-worker.js', '/robots.txt'].includes(path)) return error(404, '页面不存在。');
-    return secure(await env.ASSETS.fetch(new Request(asset, request)));
+    const response = secure(await env.ASSETS.fetch(new Request(asset, request)));
+    if (response.ok && /^\/(scripts|styles|lang|images|fonts|sounds)\//.test(path)) {
+      // 这些路径只提供公开的静态资源；邀请页、身份和 API 继续禁止缓存。
+      response.headers.set('Cache-Control', 'public, max-age=300, must-revalidate');
+      response.headers.delete('Vary');
+    }
+    return response;
   } };
 }
 export default createGateway();

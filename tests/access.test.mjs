@@ -14,6 +14,14 @@ test('匿名者可以打开邀请页面，创建者入口及接口需要 SSO', a
   assert.equal((await app.fetch(new Request(`${origin}/dashboard`), env)).status, 302);
   assert.equal((await app.fetch(post('/api/rooms'), env)).status, 401);
 });
+test('仅公开静态资源允许短期缓存，邀请和认证页面禁止缓存', async () => {
+  const app = createGateway();
+  const asset = await app.fetch(new Request(origin + '/scripts/main.js'), env);
+  assert.equal(asset.headers.get('Cache-Control'), 'public, max-age=300, must-revalidate');
+  for (const path of [`/join/${id}`, '/dashboard', '/api/rooms']) {
+    assert.equal((await app.fetch(new Request(origin + path), env)).headers.get('Cache-Control'), 'private, no-store');
+  }
+});
 test('身份头不能绕过认证，真实身份来自认证服务', async () => {
   const request = post('/api/rooms'); request.headers.set('X-Vertflux-Subject', 'forged');
   assert.equal((await createGateway().fetch(request, env)).status, 401);
