@@ -8,13 +8,37 @@
   const secret = location.hash.slice(1);
   if (role === 'guest' && /^[A-Za-z0-9_-]{43}$/.test(secret)) sessionStorage.setItem(`${key}:invite`, secret);
   history.replaceState({}, '', location.pathname);
-  if (!localStorage.getItem('language_code')) localStorage.setItem('language_code', 'zh-CN');
+  if (!localStorage.getItem('vertflux:language-initialized')) {
+    if (!localStorage.getItem('language_code')) localStorage.setItem('language_code', 'zh-CN');
+    localStorage.setItem('vertflux:language-initialized', '1');
+  }
   window.dropRoom = { id, role, peerId, invitation: sessionStorage.getItem(`${key}:invite`), key };
   document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('vf-transfer');
     const bar = document.createElement('div'); bar.className = 'vf-room-bar';
-    bar.innerHTML = '<div><a class="vf-brand" href="/">vertflux<span>drop</span></a><div class="vf-room-meta" id="vf-room-status">正在连接房间…</div></div><div class="vf-room-buttons"><input id="vf-invite" aria-label="邀请链接" readonly hidden><button id="vf-copy" hidden>复制邀请</button><button id="vf-close" hidden>结束房间</button><a href="/">离开</a></div>';
+    bar.innerHTML = '<div class="vf-room-heading"><a class="vf-brand" href="/">vertflux<span>drop</span></a><div class="vf-room-meta" id="vf-room-status">正在连接房间…</div></div><div class="vf-room-actions"><div class="vf-room-preferences" role="group" aria-label="外观与语言"></div><div class="vf-room-buttons"><input id="vf-invite" aria-label="邀请链接" readonly hidden><button id="vf-copy" hidden>复制邀请</button><button id="vf-close" hidden>结束房间</button><a href="/">离开</a></div></div>';
     document.body.append(bar);
+    const preferences = bar.querySelector('.vf-room-preferences');
+    preferences.append(document.getElementById('theme-wrapper'), document.getElementById('language-selector'));
+    for (const control of preferences.querySelectorAll('.icon-button')) {
+      control.setAttribute('role', 'button'); control.tabIndex = 0;
+      if (control.id.startsWith('theme-')) control.setAttribute('aria-pressed', String(control.classList.contains('selected')));
+      control.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); control.click(); }
+      });
+    }
+    const updatePreferenceLabels = () => {
+      for (const control of preferences.querySelectorAll('.icon-button')) {
+        if (control.title) control.setAttribute('aria-label', control.title);
+      }
+    };
+    updatePreferenceLabels(); window.addEventListener('translation-loaded', updatePreferenceLabels);
+    const updateToolbarOffset = () => document.body.style.setProperty('--vf-room-toolbar-bottom', `${Math.ceil(bar.getBoundingClientRect().bottom + 8)}px`);
+    updateToolbarOffset();
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(updateToolbarOffset); observer.observe(bar);
+      window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
+    } else window.addEventListener('resize', updateToolbarOffset);
     const mode = document.createElement('div'); mode.className = 'vf-room-mode'; mode.id = 'vf-mode';
     const connection = document.createElement('div'); connection.id = 'vf-connection';
     const speed = document.createElement('div'); speed.id = 'vf-speed'; speed.setAttribute('aria-live', 'polite');

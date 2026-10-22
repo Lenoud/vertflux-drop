@@ -1,0 +1,70 @@
+/* 房间工具栏与 PairDrop 共用主题颜色，避免自定义区域一直停留在浅色。 */
+body.vf-transfer { color-scheme: light; }
+body.vf-transfer.dark-theme { color-scheme: dark; }
+@media (prefers-color-scheme: dark) {
+  body.vf-transfer:not(.light-theme) { color-scheme: dark; }
+}
+body.vf-transfer .vf-room-bar {
+  flex-wrap: wrap;
+  background: var(--dialog-bg-color);
+  color: rgb(var(--text-color));
+  border-color: var(--lang-hr-color);
+}
+.vf-room-heading { min-width: 0; flex: 1 1 140px; }
+.vf-room-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; min-width: 0; }
+.vf-room-preferences { display: flex; align-items: center; gap: 8px; flex: none; }
+body.vf-transfer .vf-room-bar .vf-brand span,
+body.vf-transfer .vf-room-meta,
+body.vf-transfer .vf-room-mode,
+body.vf-transfer .vf-room-overlay .vf-error-help {
+  color: rgba(var(--text-color), .7);
+}
+.vf-room-meta { max-width: 360px; overflow-wrap: anywhere; }
+body.vf-transfer .vf-room-buttons button,
+body.vf-transfer .vf-room-buttons a,
+body.vf-transfer .vf-room-bar #vf-invite {
+  color: inherit;
+  background: var(--bg-color-secondary);
+  border-color: var(--lang-hr-color);
+}
+.vf-room-bar #vf-invite { width: clamp(160px, 20vw, 260px); }
+body.vf-transfer #vf-speed { color: rgb(var(--text-color)); }
+body.vf-transfer .vf-room-overlay { color: rgb(var(--text-color)); background: rgb(var(--bg-color)); }
+
+/* 三种外观始终可见，鼠标、触屏和键盘都不依赖悬停展开。 */
+.vf-room-bar #theme-wrapper { display: flex; flex-direction: row; align-items: center; gap: 2px; }
+.vf-room-bar #theme-wrapper > div:not(.icon-button) { display: contents; }
+.vf-room-bar #theme-wrapper::before { display: none; }
+.vf-room-bar #theme-wrapper .icon-button,
+.vf-room-bar #theme-wrapper:not(:hover) .icon-button:not(.selected),
+.vf-room-bar #language-selector {
+  display: flex;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  opacity: 1;
+  pointer-events: auto;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.vf-room-bar #theme-wrapper .icon-button.selected { color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 16%, transparent); }
+.vf-room-bar .icon-button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.vf-room-bar #language-selector { margin-inline-start: 3px; }
+.vf-room-bar .icon-button .icon { pointer-events: none; }
+
+/* 保留通知等原版入口；位置随顶部栏换行后的真实高度变化。 */
+body.vf-transfer > header:first-of-type { position: fixed; top: var(--vf-room-toolbar-bottom, 100px); }
+
+/* 所有收发和语言弹窗均高于导航；终止提示层仍在最上面。 */
+body.vf-transfer > x-dialog { position: fixed; inset: 0; z-index: 100; }
+body.vf-transfer > x-dialog:not([show]) { visibility: hidden; }
+body.vf-transfer > x-dialog[show] { visibility: visible; }
+body.vf-transfer > x-dialog > x-background { padding: 24px 12px; box-sizing: border-box; overflow: auto; overscroll-behavior: contain; }
+body.vf-transfer #language-select-dialog .language-buttons span { z-index: auto; pointer-events: none; }
+
+@media (max-width: 640px) {
+  .vf-room-bar .vf-room-actions { display: contents; }
+  .vf-room-bar .vf-room-preferences { margin-inline-start: auto; }
+  .vf-room-bar .vf-room-buttons { flex-basis: 100%; flex-wrap: wrap; justify-content: flex-end; }
+  .vf-room-bar #vf-invite { flex: 1 1 100%; min-width: 0; width: auto; order: 0; }
+}
