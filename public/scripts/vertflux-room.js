@@ -13,7 +13,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('vf-transfer');
     const bar = document.createElement('div'); bar.className = 'vf-room-bar';
-    bar.innerHTML = '<div><a class="vf-brand" href="/">vertflux<span>drop</span></a><div class="vf-room-meta" id="vf-room-status">正在连接房间…</div></div><div class="vf-room-buttons"><button id="vf-copy" hidden>复制邀请</button><button id="vf-close" hidden>结束房间</button><a href="/">离开</a></div>';
+    bar.innerHTML = '<div><a class="vf-brand" href="/">vertflux<span>drop</span></a><div class="vf-room-meta" id="vf-room-status">正在连接房间…</div></div><div class="vf-room-buttons"><input id="vf-invite" aria-label="邀请链接" readonly hidden><button id="vf-copy" hidden>复制邀请</button><button id="vf-close" hidden>结束房间</button><a href="/">离开</a></div>';
     document.body.append(bar);
     const mode = document.createElement('div'); mode.className = 'vf-room-mode'; mode.id = 'vf-mode'; document.body.append(mode);
     const overlay = document.createElement('div'); overlay.className = 'vf-room-overlay'; overlay.hidden = true;
@@ -25,10 +25,12 @@
       const expires = new Date(data.expiresAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
       window.dropStatus(`${data.title} · ${expires} 到期`);
       if (data.role === 'host') {
+        const invite = document.getElementById('vf-invite'); invite.hidden = false; invite.value = location.origin + data.invite;
+        invite.onclick = () => invite.select();
         const copy = document.getElementById('vf-copy'); copy.hidden = false;
         copy.onclick = async () => {
           try { await navigator.clipboard.writeText(location.origin + data.invite); copy.textContent = '已复制'; setTimeout(() => { copy.textContent = '复制邀请'; }, 2000); }
-          catch { window.dropError('浏览器未允许写入剪贴板，请允许剪贴板权限后重试。'); }
+          catch { invite.focus(); invite.select(); copy.textContent = '请手动复制链接'; }
         };
         const close = document.getElementById('vf-close'); close.hidden = false;
         close.onclick = async () => {
