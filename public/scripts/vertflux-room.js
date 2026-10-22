@@ -19,7 +19,11 @@
     const connection = document.createElement('div'); connection.id = 'vf-connection';
     const speed = document.createElement('div'); speed.id = 'vf-speed'; speed.setAttribute('aria-live', 'polite');
     mode.append(connection, speed); document.body.append(mode);
-    let activePeer, statsTimer, statsBusy = false, transfer, incomingSize = 0, outgoingSize = 0;
+    let activePeer, statsTimer, expiresTimer, statsBusy = false, transfer, incomingSize = 0, outgoingSize = 0;
+    const startupTimer = setTimeout(() => {
+      const message = '页面加载或连接超时，请返回首页重新进入。';
+      if (window.dropStop) window.dropStop(message); else window.dropError(message);
+    }, 20000);
     const mib = bytes => (bytes / (1024 * 1024)).toFixed(1);
     const beginTransfer = (direction, total) => {
       transfer = { direction, total, start: performance.now(), bytes: 0, sampleBytes: 0, sampleAt: performance.now(), rate: 0 };
@@ -67,10 +71,29 @@
       finally { statsBusy = false; }
     };
     const overlay = document.createElement('div'); overlay.className = 'vf-room-overlay'; overlay.hidden = true;
-    overlay.innerHTML = '<div><h2>传输已暂停</h2><p id="vf-error"></p><a href="/">返回快传首页</a></div>'; document.body.append(overlay);
+    overlay.setAttribute('role', 'alert');
+    overlay.innerHTML = '<div><h2>传输已中断</h2><p id="vf-error"></p><p class="vf-error-help">未完成的文件需要重新发送，当前不支持断点续传。</p><a href="/">返回快传首页</a></div>'; document.body.append(overlay);
+    overlay.querySelector('a').addEventListener('click', event => {
+      event.preventDefault();
+      window.dropLeave?.();
+      // 本地资源清理同步完成，不等待服务端关闭或 TURN 撤销后才跳转。
+      location.assign('/');
+    });
     window.dropStatus = text => { document.getElementById('vf-room-status').textContent = text; };
-    window.dropError = message => { overlay.hidden = false; document.getElementById('vf-error').textContent = message; };
+    window.dropError = message => {
+      window.dropTerminated = true;
+      clearTimeout(startupTimer); clearTimeout(expiresTimer); clearInterval(statsTimer);
+      activePeer = null; transfer = null;
+      connection.textContent = '连接已关闭'; speed.textContent = '';
+      window.dropStatus('房间连接已中断');
+      document.getElementById('vf-copy').hidden = true;
+      document.getElementById('vf-close').hidden = true;
+      document.getElementById('vf-invite').hidden = true;
+      overlay.hidden = false; document.getElementById('vf-error').textContent = message;
+    };
     window.dropReady = data => {
+      if (window.dropTerminated) return;
+      clearTimeout(startupTimer); clearTimeout(expiresTimer);
       document.title = `${data.title} · Vertflux Drop`;
       const expires = new Date(data.expiresAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
       window.dropStatus(`${data.title} · ${expires} 到期`);
@@ -86,11 +109,11 @@
         close.onclick = async () => {
           if (!confirm('结束房间后，正在进行的传输会中断。确定结束吗？')) return;
           close.disabled = true;
-          try { const response = await fetch(`/api/host/${id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (!response.ok) throw new Error(); window.dropError('房间已结束。'); }
-          catch { close.disabled = false; window.dropError('结束房间失败，请刷新后重试。'); }
+          try { const response = await fetch(`/api/host/${id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(15000) }); if (!response.ok) throw new Error(); window.dropStop?.('房间已结束。'); }
+          catch { if (!window.dropTerminated) { close.disabled = false; window.dropStatus('结束房间失败，请重试；也可以点击“离开”。'); } }
         };
       }
-      setTimeout(() => window.dropStop?.('房间已到期，请重新创建。'), Math.max(0, data.expiresAt - Date.now()));
+      expiresTimer = setTimeout(() => window.dropStop?.('房间已到期，请重新创建。'), Math.max(0, data.expiresAt - Date.now()));
     };
     window.addEventListener('peer-connected', event => {
       activePeer = typeof pairDrop !== 'undefined' && pairDrop.peers.peers[event.detail.peerId];
@@ -99,8 +122,8 @@
     });
     window.addEventListener('peer-disconnected', () => {
       activePeer = null; transfer = null; clearInterval(statsTimer);
-      connection.textContent = '等待对方重新连接'; speed.textContent = '';
+      connection.textContent = window.dropTerminated ? '连接已关闭' : '等待对方重新连接'; speed.textContent = '';
     });
-    window.addEventListener('pagehide', () => clearInterval(statsTimer));
+    window.addEventListener('pagehide', () => { clearInterval(statsTimer); clearTimeout(startupTimer); clearTimeout(expiresTimer); });
   });
 })();

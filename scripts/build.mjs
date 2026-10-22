@@ -12,7 +12,8 @@ html = html.replace('href="images/favicon-96x96.png"', 'href="/images/vertflux.s
 await writeFile('dist/index.html', html);
 const network = await readFile('public/scripts/network.js', 'utf8');
 const adapter = await readFile('cloudflare/server-connection.js', 'utf8');
-await writeFile('dist/scripts/network.js', adapter + '\n' + network.slice(network.indexOf('class Peer {')));
+const lifecycle = await readFile('cloudflare/peer-lifecycle.js', 'utf8');
+await writeFile('dist/scripts/network.js', adapter + '\n' + network.slice(network.indexOf('class Peer {')) + '\n' + lifecycle);
 // 上游当前已禁用 HEIC 转换，移除仍被预加载的 1.3 MB 库，不影响原文件传输。
 const main = await readFile('dist/scripts/main.js', 'utf8');
 await writeFile('dist/scripts/main.js', main.replace(/\s*"scripts\/libs\/heic2any\.min\.js",/, ''));
