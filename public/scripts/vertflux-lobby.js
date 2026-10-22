@@ -21,6 +21,8 @@ async function refresh() {
   } catch (error) { $('error').textContent = error.message; }
 }
 if (location.pathname === '/dashboard') {
+  document.body.classList.add('vf-dashboard-page');
+  document.querySelector('h1').textContent = '文件快传';
   $('dashboard').hidden = false; $('start').hidden = true;
   api('/api/session').then(s => { $('account').textContent = s.username; }).catch(e => { $('error').textContent = e.message; });
   refresh();
