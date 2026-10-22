@@ -77,8 +77,9 @@ export function createGateway(fetchAuth = fetch) {
     }
     if (!['GET', 'HEAD'].includes(request.method)) return error(404, '页面不存在。');
     const asset = new URL(request.url);
-    if (path === '/' || path === '/dashboard') asset.pathname = '/vertflux.html';
-    else if (/^\/(host|join)\/[a-f0-9-]{36}$/.test(path)) asset.pathname = '/index.html';
+    // Pages 会把 .html URL 重定向到规范地址；内部取资源时直接使用规范路径。
+    if (path === '/' || path === '/dashboard') asset.pathname = '/vertflux';
+    else if (/^\/(host|join)\/[a-f0-9-]{36}$/.test(path)) asset.pathname = '/';
     else if (!/^\/(scripts|styles|lang|images|fonts|sounds)\//.test(path) && !['/manifest.json', '/service-worker.js', '/robots.txt'].includes(path)) return error(404, '页面不存在。');
     return secure(await env.ASSETS.fetch(new Request(asset, request)));
   } };
