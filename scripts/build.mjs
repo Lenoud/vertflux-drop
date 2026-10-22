@@ -12,17 +12,7 @@ html = html.replace('href="images/favicon-96x96.png"', 'href="/images/vertflux.s
 await writeFile('dist/index.html', html);
 const network = await readFile('public/scripts/network.js', 'utf8');
 const adapter = await readFile('cloudflare/server-connection.js', 'utf8');
-const chunker = await readFile('cloudflare/file-chunker.js', 'utf8');
-const rtcSend = await readFile('cloudflare/rtc-send.js', 'utf8');
-const chunkerStart = network.indexOf('class FileChunker {');
-const chunkerEnd = network.indexOf('class FileDigester {', chunkerStart);
-const partitionCallback = 'offset => this._onPartitionEnd(offset));';
-const sendCallback = 'chunk => this._send(chunk),';
-if (chunkerStart < 0 || chunkerEnd < 0 || !network.includes(partitionCallback) || !network.includes(sendCallback)) throw new Error('上游传输代码已变化，请先核对分块适配。');
-let transfer = network.slice(network.indexOf('class Peer {'), chunkerStart) + chunker + '\n' + network.slice(chunkerEnd);
-transfer = transfer.replace(sendCallback, 'chunk => this._sendFileChunk ? this._sendFileChunk(chunk) : this._send(chunk),');
-transfer = transfer.replace(partitionCallback, "offset => this._onPartitionEnd(offset), () => window.dropStop?.('文件读取或发送失败，请双方重新进入房间后重试。'));");
-await writeFile('dist/scripts/network.js', adapter + '\n' + transfer + '\n' + rtcSend);
+await writeFile('dist/scripts/network.js', adapter + '\n' + network.slice(network.indexOf('class Peer {')));
 // 上游当前已禁用 HEIC 转换，移除仍被预加载的 1.3 MB 库，不影响原文件传输。
 const main = await readFile('dist/scripts/main.js', 'utf8');
 await writeFile('dist/scripts/main.js', main.replace(/\s*"scripts\/libs\/heic2any\.min\.js",/, ''));
