@@ -1,3 +1,5 @@
+import { auditGateway, callbackError, blockedProbe } from './audit.mjs';
+
 const HOST = 'drop.vertflux.com', ORIGIN = `https://${HOST}`, AUTH = 'https://auth.vertflux.com';
 export const authCookies = request => (request.headers.get('Cookie') || '').split(';').map(s => s.trim()).filter(s => s.split('=')[0].startsWith('__Host-vertflux_sso')).join('; ');
 export function safeHeaders(request) {
@@ -19,7 +21,7 @@ function secure(response) {
 }
 const error = (status, message) => secure(Response.json({ error: message }, { status }));
 export function createGateway(fetchAuth = fetch) {
-  return { async fetch(request, env) {
+  return { fetch: auditGateway(HOST, async (request, env, audit) => {
     const url = new URL(request.url), path = url.pathname;
     if (url.hostname !== HOST || url.protocol !== 'https:') {
       if (!['GET', 'HEAD'].includes(request.method)) return error(403, '请使用快传的正式域名。');
@@ -28,12 +30,21 @@ export function createGateway(fetchAuth = fetch) {
     let decoded;
     try { decoded = decodeURIComponent(path); } catch { return error(400, '路径无效。'); }
     if (decoded !== path || path.includes('//') || path.includes('\\')) return error(400, '路径无效。');
+    if (blockedProbe(path)) return error(404, '页面不存在。');
     if (path.startsWith('/oauth2/')) {
       if (!['/oauth2/start', '/oauth2/callback', '/oauth2/sign_out'].includes(path) || !['GET', 'HEAD'].includes(request.method)) return error(404, '登录入口不存在。');
       try { if (url.searchParams.get('rd') && new URL(url.searchParams.get('rd'), ORIGIN).origin !== ORIGIN) return error(400, '登录返回地址无效。'); }
       catch { return error(400, '登录返回地址无效。'); }
-      try { return secure(await fetchAuth(`${AUTH}/edge/drop${path}${url.search}`, { headers: { Cookie: authCookies(request), Accept: 'text/html' }, redirect: 'manual', signal: AbortSignal.timeout(15000) })); }
-      catch { return error(503, '统一认证暂时不可用。'); }
+      const callbackStatus = callbackError(request);
+      if (callbackStatus) { audit.auth_result = 'denied'; audit.reason = callbackStatus === 400 ? 'oauth_callback_parameters_missing' : 'oauth_csrf_cookie_missing'; return error(callbackStatus, '登录回调无效，请重新登录。'); }
+      audit.auth_result = 'oauth';
+      try {
+        const started = Date.now();
+        const response = await fetchAuth(`${AUTH}/edge/drop${path}${url.search}`, { headers: { Cookie: authCookies(request), Accept: 'text/html' }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
+        audit.upstream_status = response.status; audit.upstream_duration_ms = Date.now() - started;
+        if (response.status >= 500) { audit.reason = 'oauth_upstream_error'; return error(503, '统一认证暂时不可用。'); }
+        return secure(response);
+      } catch { audit.reason = 'oauth_network_error'; return error(503, '统一认证暂时不可用。'); }
     }
     const websocket = path === '/server';
     if (websocket && (request.headers.get('Origin') !== ORIGIN || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')) return error(403, '连接来源无效。');
@@ -47,20 +58,25 @@ export function createGateway(fetchAuth = fetch) {
     if (isApi && request.method === 'POST' && !(path === '/api/rooms' || /^\/api\/(host|guest)\/[a-f0-9-]{36}\/(connect|close)$/.test(path))) return error(404, '接口不存在。');
     let identity;
     if (host) {
+      audit.auth_result = 'required';
       const cookie = authCookies(request);
       if (cookie) {
         try {
+          const started = Date.now();
           const response = await fetchAuth(`${AUTH}/api/session?app=${HOST}`, { headers: { Cookie: cookie, Accept: 'application/json' }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
-          if (response.status === 403) return error(403, '当前账号没有创建快传房间的权限。');
+          audit.upstream_status = response.status; audit.upstream_duration_ms = Date.now() - started;
+          if (response.status === 403) { audit.auth_result = 'denied'; audit.reason = 'application_permission_denied'; return error(403, '当前账号没有创建快传房间的权限。'); }
           if (response.ok) { identity = await response.json(); if (!identity?.subject || !identity?.username) return error(503, '统一认证返回的身份无效。'); }
-          else if (response.status !== 401) return error(503, '统一认证暂时不可用。');
-        } catch { return error(503, '统一认证暂时不可用。'); }
+          else if (response.status !== 401) { audit.reason = 'session_upstream_error'; return error(503, '统一认证暂时不可用。'); }
+        } catch { audit.reason = 'session_network_error'; return error(503, '统一认证暂时不可用。'); }
       }
       if (!identity) {
+          audit.auth_result = 'denied'; audit.reason = 'login_required';
         const loginUrl = `/oauth2/start?rd=${encodeURIComponent(ORIGIN + (isApi ? '/dashboard' : path))}`;
         return isApi ? secure(Response.json({ error: '请先登录。', loginUrl }, { status: 401 })) : secure(Response.redirect(ORIGIN + loginUrl, 302));
       }
     }
+    if (identity) audit.auth_result = 'allowed';
     if (path === '/api/session' && request.method === 'GET') return secure(Response.json({ username: identity.username }));
     if (isApi || websocket) {
       const headers = safeHeaders(request);
@@ -88,6 +104,6 @@ export function createGateway(fetchAuth = fetch) {
       response.headers.delete('Vary');
     }
     return response;
-  } };
+  }) };
 }
 export default createGateway();
