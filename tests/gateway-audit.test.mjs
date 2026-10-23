@@ -7,7 +7,9 @@ test('登录回调缺少参数或 CSRF Cookie 时在换码前拒绝', () => {
   assert.equal(callbackError(new Request(origin)), 400)
   assert.equal(callbackError(new Request(origin + '?code=fixture&state=fixture')), 403)
   assert.equal(callbackError(new Request(origin + '?code=fixture&state=fixture', { headers: { Cookie: '__Host-vertflux_sso=existing' } })), 403)
-  assert.equal(callbackError(new Request(origin + '?code=fixture&state=fixture', { headers: { Cookie: '__Host-vertflux_sso_csrf_abc123=fixture' } })), 0)
+  assert.equal(callbackError(new Request(origin + '?code=fixture&state=fixture', { headers: { Cookie: '__Host-vertflux_sso_abc123_X-y_csrf=fixture' } })), 0)
+  assert.equal(callbackError(new Request(origin + '?code=fixture&state=fixture', { headers: { Cookie: '__Host-vertflux_sso_csrf=fixture' } })), 0)
+  assert.equal(callbackError(new Request(origin + '?code=fixture&state=fixture', { headers: { Cookie: '__Host-vertflux_sso_csrf_wrong=fixture' } })), 403)
 })
 
 test('异常分隔符和常见配置扫描路径可明确拒绝', () => {

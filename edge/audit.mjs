@@ -1,5 +1,5 @@
 // 每个应用保留同一份边界逻辑；日志只接受固定字段，不记录 URL、Cookie 和正文。
-const CALLBACK_COOKIE = /^__Host-vertflux_sso_csrf(?:_[A-Za-z0-9_-]+)?=.+$/
+const CALLBACK_COOKIE = /^__Host-vertflux_sso(?:_[A-Za-z0-9_-]+)?_csrf=.+$/
 
 export function callbackError(request) {
   const url = new URL(request.url)
