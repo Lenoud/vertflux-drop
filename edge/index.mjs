@@ -40,7 +40,7 @@ export function createGateway(fetchAuth = fetch) {
       audit.auth_result = 'oauth';
       try {
         const started = Date.now();
-        const response = await fetchAuth(`${AUTH}/edge/drop${path}${url.search}`, { headers: { Cookie: authCookies(request), Accept: 'text/html' }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
+        const response = await fetchAuth(`${AUTH}/edge/drop${path}${url.search}`, { headers: { Cookie: authCookies(request), Accept: 'text/html', 'X-Request-ID': audit.request_id }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
         audit.upstream_status = response.status; audit.upstream_duration_ms = Date.now() - started;
         if (response.status >= 500) { audit.reason = 'oauth_upstream_error'; return error(503, '统一认证暂时不可用。'); }
         return secure(response);
@@ -63,7 +63,7 @@ export function createGateway(fetchAuth = fetch) {
       if (cookie) {
         try {
           const started = Date.now();
-          const response = await fetchAuth(`${AUTH}/api/session?app=${HOST}`, { headers: { Cookie: cookie, Accept: 'application/json' }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
+          const response = await fetchAuth(`${AUTH}/api/session?app=${HOST}`, { headers: { Cookie: cookie, Accept: 'application/json', 'X-Request-ID': audit.request_id }, redirect: 'manual', signal: AbortSignal.timeout(15000) });
           audit.upstream_status = response.status; audit.upstream_duration_ms = Date.now() - started;
           if (response.status === 403) { audit.auth_result = 'denied'; audit.reason = 'application_permission_denied'; return error(403, '当前账号没有创建快传房间的权限。'); }
           if (response.ok) { identity = await response.json(); if (!identity?.subject || !identity?.username) return error(503, '统一认证返回的身份无效。'); }
