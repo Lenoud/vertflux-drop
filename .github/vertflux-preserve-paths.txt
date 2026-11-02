@@ -1,19 +1,21 @@
+# 每行一个路径。普通路径参与 Git 三方合并；! 开头的路径只用本地版本，上游改动会在同步 PR 中列出。
+# .github 下的路径始终只用本地版本。语法详见 .github/scripts/vertflux-sync-upstream.sh。
 .github/workflows
 .github/scripts
 .github/vertflux-preserve-paths.txt
-backend
-edge
-cloudflare
-scripts
-tests
-public/vertflux.html
-public/styles/vertflux.css
-public/scripts/vertflux-lobby.js
-public/scripts/vertflux-room.js
-public/images/vertflux.svg
-wrangler.jsonc
-wrangler.backend.jsonc
-package.json
-package-lock.json
-README.md
-.gitignore
+!backend
+!edge
+!cloudflare
+!scripts
+!tests
+!public/vertflux.html
+!public/styles/vertflux.css
+!public/scripts/vertflux-lobby.js
+!public/scripts/vertflux-room.js
+!public/images/vertflux.svg
+!wrangler.jsonc
+!wrangler.backend.jsonc
+!package.json
+!package-lock.json
+!README.md
+!.gitignore
