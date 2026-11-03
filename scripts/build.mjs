@@ -9,7 +9,7 @@ html = html.replace('<html lang="en">', '<html lang="zh-CN">').replace('<head>',
 html = html.replace(/<title>.*?<\/title>/, '<title>Vertflux Drop · 文件快传</title>');
 html = html.replace('</head>', '<link rel="stylesheet" href="/styles/vertflux.css"><link rel="stylesheet" href="/styles/vertflux-room.css"><script src="/scripts/vertflux-room.js" defer></script></head>');
 html = html.replaceAll('https://pairdrop.net/', 'https://drop.vertflux.com/');
-html = html.replace('href="images/favicon-96x96.png"', 'href="/images/vertflux.svg"');
+html = html.replace('href="images/favicon-96x96.png"', 'href="/images/vertflux.svg"').replace('<meta name="theme-color" content="#3367d6">', '<meta name="theme-color" content="#080d13">');
 await writeFile('dist/index.html', html);
 const network = await readFile('public/scripts/network.js', 'utf8');
 const adapter = await readFile('cloudflare/server-connection.js', 'utf8');
@@ -50,7 +50,7 @@ for (const page of ['index', 'vertflux']) {
   await writeFile(path, pageHtml);
 }
 await writeFile('dist/service-worker.js', "self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));\n");
-await writeFile('dist/manifest.json', JSON.stringify({ name: 'Vertflux Drop · 文件快传', short_name: 'Vertflux Drop', start_url: '/', display: 'standalone', background_color: '#f5f4ef', theme_color: '#234333', icons: [{ src: '/images/vertflux.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }] }));
+await writeFile('dist/manifest.json', JSON.stringify({ name: 'Vertflux Drop · 文件快传', short_name: 'Vertflux Drop', start_url: '/', display: 'standalone', background_color: '#080d13', theme_color: '#080d13', icons: [{ src: '/images/vertflux.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }] }));
 await writeFile('dist/robots.txt', 'User-agent: *\nDisallow: /\n');
 await writeFile('dist/_routes.json', JSON.stringify({ version: 1, include: ['/*'], exclude: [] }));
 await build({ entryPoints: ['edge/index.mjs'], outfile: 'dist/_worker.js', bundle: true, format: 'esm', platform: 'browser', target: 'es2022' });

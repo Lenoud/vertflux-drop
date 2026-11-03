@@ -4,6 +4,27 @@ body.vf-transfer.dark-theme { color-scheme: dark; }
 @media (prefers-color-scheme: dark) {
   body.vf-transfer:not(.light-theme) { color-scheme: dark; }
 }
+/* 只通过 PairDrop 已有的深色变量换成 Vertflux 底色，不改上游文件；主色与浅色主题保持原版。 */
+body.vf-transfer {
+  --dt-text-color: 240,245,247;
+  --dt-dialog-bg-color: #0f1822;
+  --dt-bg-color: 8,13,19;
+  --dt-bg-color-secondary: #142130;
+  --dt-lang-hr-color: #24313c;
+  --dt-shadow-color-secondary-cover-rgb: 20,33,48;
+  --dt-shadow-color-dialog-cover-rgb: 20,33,48;
+  /* 叠加元素的强调色：深色用品牌薄荷绿，浅色用加深的同色系以保证对比度。 */
+  --vf-room-accent: #0d6b50;
+}
+body.vf-transfer.dark-theme { --vf-room-accent: var(--vf-accent); }
+@media (prefers-color-scheme: dark) {
+  body.vf-transfer:not(.light-theme) { --vf-room-accent: var(--vf-accent); }
+}
+/* 官网字标为白色，浅色外观下反相为深色。 */
+body.vf-transfer.light-theme .vf-room-bar .vf-brand img { filter: invert(1); }
+@media (prefers-color-scheme: light) {
+  body.vf-transfer:not(.dark-theme) .vf-room-bar .vf-brand img { filter: invert(1); }
+}
 body.vf-transfer .vf-room-bar {
   flex-wrap: wrap;
   background: var(--dialog-bg-color);
@@ -19,6 +40,7 @@ body.vf-transfer .vf-room-mode,
 body.vf-transfer .vf-room-overlay .vf-error-help {
   color: rgba(var(--text-color), .7);
 }
+body.vf-transfer .vf-room-bar .vf-brand > span { border-color: rgba(var(--text-color), .3); }
 .vf-room-meta { max-width: 360px; overflow-wrap: anywhere; }
 body.vf-transfer .vf-room-buttons button,
 body.vf-transfer .vf-room-buttons a,
@@ -27,6 +49,13 @@ body.vf-transfer .vf-room-bar #vf-invite {
   background: var(--bg-color-secondary);
   border-color: var(--lang-hr-color);
 }
+body.vf-transfer .vf-room-buttons button:hover,
+body.vf-transfer .vf-room-buttons a:hover { border-color: var(--vf-room-accent); }
+/* 复制邀请是房主的主要操作：薄荷绿实底深色字。 */
+body.vf-transfer .vf-room-buttons #vf-copy { background: var(--vf-accent); color: var(--vf-on-accent); border-color: var(--vf-accent); font-weight: 600; }
+body.vf-transfer .vf-room-buttons #vf-copy:hover { background: var(--vf-accent-hover); }
+body.vf-transfer .vf-room-bar :focus-visible,
+body.vf-transfer .vf-room-overlay a:focus-visible { outline: 2px solid var(--vf-room-accent); outline-offset: 2px; }
 .vf-room-bar #vf-invite { width: clamp(160px, 20vw, 260px); }
 body.vf-transfer #vf-speed { color: rgb(var(--text-color)); }
 body.vf-transfer .vf-room-overlay { color: rgb(var(--text-color)); background: rgb(var(--bg-color)); }
@@ -47,8 +76,8 @@ body.vf-transfer .vf-room-overlay { color: rgb(var(--text-color)); background: r
   border-radius: 7px;
   cursor: pointer;
 }
-.vf-room-bar #theme-wrapper .icon-button.selected { color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 16%, transparent); }
-.vf-room-bar .icon-button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.vf-room-bar #theme-wrapper .icon-button.selected { color: var(--vf-room-accent); background: color-mix(in srgb, var(--vf-room-accent) 16%, transparent); }
+.vf-room-bar .icon-button:focus-visible { outline: 2px solid var(--vf-room-accent); outline-offset: 2px; }
 .vf-room-bar #language-selector { margin-inline-start: 3px; }
 .vf-room-bar .icon-button .icon { pointer-events: none; }
 
