@@ -12,11 +12,16 @@
     if (!localStorage.getItem('language_code')) localStorage.setItem('language_code', 'zh-CN');
     localStorage.setItem('vertflux:language-initialized', '1');
   }
+  // 首次进入默认深色，与 Vertflux 品牌一致；之后尊重用户的外观选择（包括跟随系统）。
+  if (!localStorage.getItem('vertflux:theme-initialized')) {
+    if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'dark');
+    localStorage.setItem('vertflux:theme-initialized', '1');
+  }
   window.dropRoom = { id, role, peerId, invitation: sessionStorage.getItem(`${key}:invite`), key };
   document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('vf-transfer');
     const bar = document.createElement('div'); bar.className = 'vf-room-bar';
-    bar.innerHTML = '<div class="vf-room-heading"><a class="vf-brand" href="/">vertflux<span>drop</span></a><div class="vf-room-meta" id="vf-room-status">正在连接房间…</div></div><div class="vf-room-actions"><div class="vf-room-preferences" role="group" aria-label="外观与语言"></div><div class="vf-room-buttons"><input id="vf-invite" aria-label="邀请链接" readonly hidden><button id="vf-copy" hidden>复制邀请</button><button id="vf-close" hidden>结束房间</button><a href="/">离开</a></div></div>';
+    bar.innerHTML = '<div class="vf-room-heading"><a class="vf-brand" href="/" aria-label="Vertflux Drop 首页"><img src="/images/vertflux-logo.png" width="112" height="15" alt="Vertflux"><span>DROP</span></a><div class="vf-room-meta" id="vf-room-status">正在连接房间…</div></div><div class="vf-room-actions"><div class="vf-room-preferences" role="group" aria-label="外观与语言"></div><div class="vf-room-buttons"><input id="vf-invite" aria-label="邀请链接" readonly hidden><button id="vf-copy" hidden>复制邀请</button><button id="vf-close" hidden>结束房间</button><a href="/">离开</a></div></div>';
     document.body.append(bar);
     const preferences = bar.querySelector('.vf-room-preferences');
     preferences.append(document.getElementById('theme-wrapper'), document.getElementById('language-selector'));

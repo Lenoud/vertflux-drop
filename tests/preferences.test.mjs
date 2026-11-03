@@ -116,6 +116,20 @@ test('用户选择系统语言后刷新仍跟随系统，不再被强制改回�
   assert.equal(saved.getItem('language_code'), 'en');
 });
 
+test('首次进入默认深色外观，之后选择跟随系统或浅色不会被改回深色', () => {
+  const fresh = storage();
+  loadRoom(fresh);
+  assert.equal(fresh.getItem('theme'), 'dark');
+  assertTheme(themes(fresh), 'dark');
+  // 用户点“跟随系统”会清除 theme，刷新后保持跟随系统。
+  fresh.removeItem('theme');
+  loadRoom(fresh);
+  assert.equal(fresh.getItem('theme'), null);
+  const light = storage({ theme: 'light' });
+  loadRoom(light);
+  assert.equal(light.getItem('theme'), 'light');
+});
+
 test('点击语言按钮内的文字也能选中该语言，关闭后保留房间标题和图标并返回焦点', async () => {
   let focused = false, translated, favicon = 'vertflux.svg';
   const localStorage = storage(), selected = { classList: classList(['current']) };
